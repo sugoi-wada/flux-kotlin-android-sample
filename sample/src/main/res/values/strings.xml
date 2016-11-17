@@ -1,0 +1,4 @@
+<resources>
+    <string name="search">検索</string>
+    <string name="error_network">インターネット接続がありません。</string>
+</resources>
