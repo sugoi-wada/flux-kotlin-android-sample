@@ -59,9 +59,7 @@ class SearchUserActivity : RxAppCompatActivity() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { searchModel ->
                     itemCountText.text = searchModel.totalCountText
-                    adapter.users = searchModel.elements
-
-                    recycler.scrollToPosition((recycler.layoutManager as LinearLayoutManager).findLastVisibleItemPosition())
+                    adapter.addUsers(searchModel.newElements)
                 }
 
         searchUserStore.loading
@@ -87,7 +85,7 @@ class SearchUserActivity : RxAppCompatActivity() {
 
         recycler.scrollEvents()
                 .bindToLifecycle(this)
-                .filter { recycler.isNearBottomEdge(3) }
+                .filter { recycler.isNearBottomEdge(5) }
                 .filter { searchUserStore.isLoading.not() && searchUserStore.value?.nextPage != null }
                 .map { searchUserStore.value?.searchkey.to(searchUserStore.value?.nextPage!!) }
                 .distinctUntilChanged { lPair, rPair -> lPair.first == rPair.first && lPair.second == rPair.second }
@@ -137,7 +135,7 @@ class SearchUserActivity : RxAppCompatActivity() {
                         return@subscribe
                     }
 
-                    adapter.users = emptyList()
+                    adapter.deleteAllUsers()
                     searchUserAction.searchUser(query.text, 0)
                 }
 
@@ -167,12 +165,7 @@ class SearchUserActivity : RxAppCompatActivity() {
             private val LOADING = 1
         }
 
-        var users: List<GitHubUser> = emptyList()
-            set(value) {
-                notifyItemRangeRemoved(0, field.size)
-                field = value
-                notifyItemRangeInserted(0, value.size)
-            }
+        private val users: MutableList<GitHubUser> = mutableListOf()
 
         var isLoading: Boolean = false
             set(value) {
@@ -206,6 +199,19 @@ class SearchUserActivity : RxAppCompatActivity() {
                 holder.url.text = users[position].url
                 Glide.with(context).load(users[position].imageUrl).into(holder.avatar)
             }
+        }
+
+        fun addUsers(users: List<GitHubUser>) {
+            if (isLoading) {
+                notifyItemRemoved(this.users.size)
+            }
+            notifyItemRangeInserted(this.users.size, users.count())
+            this.users.addAll(users)
+        }
+
+        fun deleteAllUsers() {
+            notifyItemRangeRemoved(0, users.size)
+            users.removeAll { true }
         }
     }
 
